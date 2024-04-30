@@ -4,13 +4,14 @@
 
 #define ROUNDS 15
 #define DECK_SIZE 60
-#define MAX_PLAYERS 4
-#define HAND_SIZE 15
+#define PLAYERS 4
+#define MAX_HAND_SIZE 15
 
 
 typedef enum {
-    RED, GREEN, BLUE, YELLOW, NO_COLOR
+    RED, GREEN, BLUE, YELLOW, NO_COLOR, WIZZARD, JESTER, NICHTS
 } Color;
+
 
 typedef struct {
     int value;
@@ -18,16 +19,20 @@ typedef struct {
 } Card;
 
 typedef struct {
+    int called_stiche;
+    int gewonnene_runden;
+    int gewonnene_stiche;
     char name[50];
-    Card hand[HAND_SIZE];
+    Card hand[MAX_HAND_SIZE];
     int score;
-    int tricks;
+
 } Player;
 
 Color trump_color;
 Card deck[DECK_SIZE];
-Player players[MAX_PLAYERS];
+Player players[PLAYERS];
 int num_players;
+int current_round = 0;
 
 const char* get_color_name(Color color) {
     switch (color) {
@@ -36,17 +41,21 @@ const char* get_color_name(Color color) {
         case BLUE: return "BLUE";
         case YELLOW: return "YELLOW";
         case NO_COLOR: return "NO_COLOR";
+        case WIZZARD: return "WIZZARD";
+        case JESTER: return "JESTER";
         default: return "UNKNOWN_COLOR";
     }
 }
 
+
 void print_hand(int player) {
     printf("%s, das sind deine Karten:\n", players[player].name);
-    for (int i = 0; i < HAND_SIZE; i++) {
+    for (int i = 0; i < MAX_HAND_SIZE; i++) {
         if (players[player].hand[i].value != 0) {  // Wir gehen davon aus, dass eine Karte mit dem Wert 0 nicht existiert
-            printf("%d: %d of %s\n", i, players[player].hand[i].value, get_color_name(players[player].hand[i].color));
+            printf("%d: %d of %s\n" ,i, players[player].hand[i].value, get_color_name(players[player].hand[i].color));
         }
     }
+    printf("Trumpf : %s\n", get_color_name(trump_color));
 }
 
 void initialize_players() {
@@ -76,58 +85,28 @@ void shuffle_deck() {
     }
 }
 
-void deal_cards() {
-    int i, j;
-    for (i = 0; i < num_players; i++) {
-        for (j = 0; j < HAND_SIZE; j++) {
-            players[i].hand[j] = deck[i * HAND_SIZE + j];
+void deal_cards(int round_hand_size) {
+    int i;
+    for (i = 0; i < round_hand_size; i += 4) {
+            players[0].hand[i] = deck[i];
+            players[1].hand[i+1] = deck[i];
+            players[2].hand[i+2] = deck[i];
+            players[3].hand[i+3] = deck[i];
         }
+    for (int j = i; j < 15; ++j) {
+        players[0].hand[j].color = NICHTS;
+        players[1].hand[j].color = NICHTS;
+        players[2].hand[j].color = NICHTS;
+        players[3].hand[j].color = NICHTS;
     }
 }
 
-Card trick_cards[MAX_PLAYERS];  // Karten, die in diesem Stich ausgespielt wurden
-Color trick_color;  // Farbe des ersten ausgespielten Karte in diesem Stich
 
-void play_card(int player, int round) {
-    print_hand(player);  // Zeige die Karten des Spielers an
-    printf("Trumpf : %s\n", get_color_name(trump_color));
-    printf("%s, welche Karte möchtest du ausspielen?\n", players[player].name);
-    int card_index;
-    scanf("%d", &card_index);
-    Card played_card = players[player].hand[card_index];
-    if (trick_color == NO_COLOR) {
-        trick_color = played_card.color;
-    }
-    // Überprüfen, ob die ausgespielte Karte den Regeln entspricht
-    TODO: // trick color initialisierung für ersten spieler richtig machen
-    if (player != 0 && played_card.color != trick_color && played_card.color != trump_color){
-        for (int i = 0; i < round; i++) {
-            if (players[player].hand[i].color == trick_color || players[player].hand[i].color == trump_color){
-                printf("Du musst die Farbe bedienen, wenn du kannst. Versuche es erneut.\n");
-                return play_card(player, round);
-            }
-        }
-    }
-
-    // Karte aus der Hand des Spielers entfernen
-    for (int i = card_index; i < round - 1; i++) {
-        players[player].hand[i] = players[player].hand[i + 1];
-    }
-
-    printf("%s spielt %d of %s\n", players[player].name, played_card.value, get_color_name(played_card.color));
-
-    // Karte zum Stich hinzufügen
-    trick_cards[player] = played_card;
-    if (player == 0) {
-        trick_color = played_card.color;
-    }
-}
-
-int determine_trick_winner(int round) {
-    Card winning_card = trick_cards[0];
+int determine_single_round_winner(Card played_Cards[]) {
+    Card winning_card = played_Cards[0];
     int winning_player = 0;
     for (int i = 1; i < num_players; i++) {
-        Card current_card = trick_cards[i];
+        Card current_card = played_Cards[i];
         if (current_card.color == winning_card.color && current_card.value > winning_card.value) {
             winning_card = current_card;
             winning_player = i;
@@ -139,42 +118,92 @@ int determine_trick_winner(int round) {
     return winning_player;
 }
 
+
+int play_cards_ein_stich() {
+    // Karten, die in diesem Stich ausgespielt wurden
+    Card played_Cards[PLAYERS];  // Karten, die in diesem Stich ausgespielt wurden
+    Color trick_Color = NO_COLOR;
+    for(int player = 0; player < num_players; player++){
+        print_hand(player);  // Zeige die Karten des Spielers an
+        setbuf(stdout, NULL);
+        printf("Trick : %s \n", get_color_name(trick_Color));
+        printf("%s, welche Karte möchtest du ausspielen?\n", players[player].name);
+        int card_index;
+        scanf("%d", &card_index);
+        Card played_card = players[player].hand[card_index];
+        if (trick_Color == NO_COLOR && played_card.color != JESTER && played_card.color != WIZZARD) {
+            trick_Color = played_card.color;
+        }
+        // Überprüfen, ob die ausgespielte Karte den Regeln entspricht
+        if (played_card.color != trick_Color && played_card.color != trump_color && played_card.color != JESTER && played_card.color != WIZZARD) {
+            for (int i = 0; i < 14; i++) {
+                if (players[player].hand[i].color == trick_Color || players[player].hand[i].color == trump_color){
+                    printf("Du musst die Farbe bedienen, wenn du kannst. Versuche es erneut.\n");
+                    return play_cards_ein_stich();
+                }
+            }
+        }
+
+
+        // Karte aus der Hand des Spielers entfernen
+        for (int i = card_index; i < 15; i++) {
+            players[player].hand[i] = players[player].hand[i + 1];
+        }
+
+        printf("%s spielt %d of %s\n", players[player].name, played_card.value, get_color_name(played_card.color));
+
+        // Karte zum Stich hinzufügen
+        played_Cards[player] = played_card;
+    }
+    return determine_single_round_winner(played_Cards);
+}
+
+int max(int player1, int player2, int player3, int player4){
+    if(player1 > player2 && player1 > player3 && player1 > player4){
+        return 0;
+    } else if(player2 > player1 && player2 > player3 && player2 > player4){
+        return 1;
+    } else if(player3 > player1 && player3 > player2 && player3 > player4){
+        return 2;
+    } else {
+        return 3;
+    }
+}
+
 void play_round(int round) {
     // Jeder Spieler erhält eine Anzahl von Karten entsprechend der Rundenzahl
-    for (int i = 0; i < num_players; i++) {
-        for (int j = 0; j < round; j++) {
-            players[i].hand[j] = deck[i * round + j];
-        }
-    }
+    deal_cards(round);
+    int called_stiche = 0;
 
-
-    // Festlegen der Trumpffarbe
-
-    trump_color = deck[0].color;
+    trump_color = deck[round*4+1].color;
     // Jeder Spieler macht eine Vorhersage über die Anzahl der Stiche, die er machen wird
     for (int i = 0; i < num_players; i++) {
         print_hand(i);  // Zeige die Karten des Spielers an
-
+        setbuf(stdout, NULL);
         printf("%s, wie viele Stiche denkst du, wirst du machen?\n", players[i].name);
         scanf("%d", &players[i].score);  // Hier verwenden wir die Punktzahl vorübergehend, um die Vorhersage zu speichern
+        if(called_stiche+ players[i].score > round){
+            printf("Die Summe der Stiche kann nicht größer als die Rundenzahl sein. Versuche es erneut.\n");
+            return play_round(round);
+        }
     }
 
     // Die Spieler spielen ihre Karten in einer festgelegten Reihenfolge aus
+
     for (int i = 0; i < round; i++) {
         for (int j = 0; j < num_players; j++) {
-            play_card(j, round);
+                players[play_cards_ein_stich()].gewonnene_stiche +=1;
         }
-        int trick_winner = determine_trick_winner(round);
-        printf("%s hat den Stich gewonnen!\n", players[trick_winner].name);
-        players[trick_winner].tricks++;
+        int winner = max(players[0].gewonnene_stiche, players[1].gewonnene_stiche, players[2].gewonnene_stiche, players[3].gewonnene_stiche);
+        printf("%s hat den Stich gewonnen!\n", players[winner].name);
+        players[winner].gewonnene_runden +=1;
     }
-
     // Die Punktzahlen der Spieler werden basierend auf den Vorhersagen und den tatsächlichen Stichen aktualisiert
     for (int i = 0; i < num_players; i++) {
-        if (players[i].score == players[i].tricks) {
-            players[i].score = 20 + 10 * players[i].tricks;
+        if (players[i].gewonnene_stiche == players[i].called_stiche) {
+            players[i].gewonnene_stiche = 20 + 10 * players[i].called_stiche;
         } else {
-            players[i].score = -10 * abs(players[i].score - players[i].tricks);
+            players[i].gewonnene_stiche = players[i].score -(10 * abs(players[i].gewonnene_stiche - players[i].called_stiche));
         }
     }
 }
@@ -203,10 +232,10 @@ int main() {
     initialize_players();
 
     // Teilen Sie die Karten aus.
-    deal_cards();
 
     // Spielen Sie das Spiel.
     for (int round = 1; round < ROUNDS; round++) {
+        deal_cards(round);
         play_round(round);
     }
     int winner = get_highest_score_player();

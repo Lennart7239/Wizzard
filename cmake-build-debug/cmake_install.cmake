@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/lenna/OneDrive - Students RWTH Aachen University/coden/C
+# Install script for directory: C:/Users/lenna/OneDrive - Students RWTH Aachen University/coden/C/Wizzard
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "C:/Users/lenna/OneDrive - Students RWTH Aachen University/coden/C/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "C:/Users/lenna/OneDrive - Students RWTH Aachen University/coden/C/Wizzard/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
