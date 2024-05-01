@@ -26,6 +26,7 @@ typedef struct {
     int score;
 } Player;
 
+Card trick;
 Color trump_color;
 Card deck[DECK_SIZE];
 Player players[PLAYERS];
@@ -42,15 +43,40 @@ const char* get_color_name(Color color) {
     }
 }
 
+void print_cards(Card cards[], int i) {
+        switch (cards[i].value) {
+            case 14:
+                printf("\tJoker\n", i);
+                break;
+            case 0:
+                printf("\tWizzard\n", i);
+                break;
+            case -1:
+                break;
+            default:
+                printf("\t\t%d of %s\n", cards[i].value, get_color_name(cards[i].color));
+                break;
+    }
+}
+void print_deck(Card deck[PLAYERS]) {
+    printf("Aktuell liegende Karten:\n\n");
+    printf("\tTrumpf\t:%s\n", get_color_name(trump_color));
+    if(trick.value != 0) {
+        printf("\tTrick\t:%s\n", get_color_name(trick.color));
+    }
+    for (int i = 1; i < PLAYERS; i++) {
+        print_cards(deck, i);
+    }
+}
 
 void print_hand(int player) {
-    printf("%s, das sind deine Karten:\n", players[player].name);
+    printf("\n%s Karten:\n\n", players[player].name);
     for (int i = 0; i < MAX_HAND_SIZE; i++) {
         if(players[player].hand[i].value < 15 && players[player].hand[i].value > 0) {  // Wir gehen davon aus, dass eine Karte mit dem Wert 0 nicht existiert
-            printf("%d: %d of %s\n" ,i, players[player].hand[i].value, get_color_name(players[player].hand[i].color));
+            printf("\t%d: %d of %s\n" ,i, players[player].hand[i].value, get_color_name(players[player].hand[i].color));
         }
     }
-    printf("Trumpf : %s\n", get_color_name(trump_color));
+
 }
 
 void initialize_players() {
@@ -125,32 +151,37 @@ int determine_single_round_winner(Card played_Cards[4]) {
 
 int play_cards_ein_stich(int start_spieler) {
     Card played_Cards[PLAYERS];  // Karten, die in diesem Stich ausgespielt wurden
-    Card trick;
+    for(int i = 0; i < PLAYERS; i++){
+        played_Cards[i].value = -1;
+        played_Cards[i].color = (Color) NULL;
+    }
     trick.value = 0;
     trick.color = (Color) NULL;
     for(int x = 0; x < PLAYERS; x++){
         int offset = (x+start_spieler)%PLAYERS;
         nochmal:
+        print_deck(played_Cards);
         print_hand(offset);  // Zeige die Karten des Spielers an
         setbuf(stdout, NULL);
-        printf("Trick : %s \n", get_color_name(trick.color));
-        printf("%s, welche Karte willst du ausspielen?\n", players[offset].name);
+
+        printf("\n%s, welche Karte willst du ausspielen?\n", players[offset].name);
         int card_index;
         scanf("%d", &card_index);
         if(card_index < 0 || card_index >= current_round){
-            printf("Wird nicht akzeptiert. Versuche es erneut.\n");
+            printf("\nWird nicht akzeptiert. Versuche es erneut.\n");
             goto nochmal;
         }
         Card played_card = players[offset].hand[card_index];
         if (trick.value == 0 && played_card.value != 14 && played_card.value != 0) {
             trick.color = played_card.color;
+            trick.value = played_card.value;
         }
         // Überprüfen, ob die ausgespielte Karte den Regeln entspricht
         if (played_card.color != trick.color && played_card.color != trump_color && played_card.value != 14 && played_card.value != 0) {
             for (int i = 0; i < current_round; i++) {
                 if (players[offset].hand[i].color == trick.color || players[offset].hand[i].color == trump_color){
-                    if(players[offset].hand[i].value > 14 || players[offset].hand[i].value < 1) {
-                        printf("Du musst die Farbe bedienen, wenn du kannst. Versuche es erneut.\n");
+                    if(players[offset].hand[i].value < 14 && players[offset].hand[i].value > 1) {
+                        printf("\nDu musst die Farbe bedienen, wenn du kannst. Versuche es erneut.\n");
                         goto nochmal;
                     }
                 }
@@ -204,7 +235,7 @@ void play_round(int round, int start_spieler_runde){
     }
     // Die Spieler spielen ihre Karten in einer festgelegten Reihenfolge aus
 
-    unsigned int start_spieler_stich = start_spieler_runde;
+    int start_spieler_stich = start_spieler_runde;
     for (int i = 0; i < round; i++) {
             start_spieler_stich = play_cards_ein_stich(start_spieler_stich);
             players[start_spieler_stich].gewonnene_stiche +=1;
