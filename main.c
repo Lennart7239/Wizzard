@@ -85,9 +85,9 @@ void shuffle_deck() {
 
 void deal_cards(int round_hand_size) {
     int i;
-    for (i = 0; i < round_hand_size; i += 4) {
+    for (i = 0; i < round_hand_size; i++) {
         for (int k = 0; k < num_players; ++k) {
-            players[k].hand[i] = deck[i+k];
+            players[k].hand[i] = deck[num_players*i+k];
             }
         }
     for (int j = i; j < 15; ++j) {
@@ -95,6 +95,14 @@ void deal_cards(int round_hand_size) {
             players[k].hand[j].color = (Color) NULL;
         }
     }
+}
+
+void clean_hand(int player, int card){
+    for(int i = card; i < 15; i++) {
+        players[player].hand[card] = players[player].hand[card + 1];
+    }
+    players[player].hand[14].color = (Color) NULL;
+    players[player].hand[14].value = 0;
 }
 
 
@@ -116,43 +124,47 @@ int determine_single_round_winner(Card played_Cards[]) {
 
 
 int play_cards_ein_stich(int start_spieler) {
-    // Karten, die in diesem Stich ausgespielt wurden
     Card played_Cards[PLAYERS];  // Karten, die in diesem Stich ausgespielt wurden
     Color trick_Color = (Color) NULL;
-    int offset = start_spieler;
     for(int x = 0; x < num_players; x++){
-        print_hand(x+offset%4);  // Zeige die Karten des Spielers an
+        int offset = x+start_spieler%num_players;
+        nochmal:
+        print_hand(offset);  // Zeige die Karten des Spielers an
         setbuf(stdout, NULL);
         printf("Trick : %s \n", get_color_name(trick_Color));
-        printf("%s, welche Karte möchtest du ausspielen?\n", players[x+offset%4].name);
+        printf("%s, welche Karte möchtest du ausspielen?\n", players[offset].name);
         int card_index;
         scanf("%d", &card_index);
-        Card played_card = players[x+offset%4].hand[card_index];
+        if(card_index < 0 || card_index >= current_round){
+            printf("Ungültige Karte. Versuche es erneut.\n");
+            goto nochmal;
+        }
+        Card played_card = players[offset].hand[card_index];
         if (trick_Color == (Color)NULL && played_card.color != JESTER && played_card.color != WIZZARD) {
             trick_Color = played_card.color;
         }
         // Überprüfen, ob die ausgespielte Karte den Regeln entspricht
         if (played_card.color != trick_Color && played_card.color != trump_color && played_card.color != JESTER && played_card.color != WIZZARD) {
             for (int i = 0; i < 14; i++) {
-                if (players[x+offset%4].hand[i].color == trick_Color || players[x+offset%4].hand[i].color == trump_color){
+                if (players[offset].hand[i].color == trick_Color || players[offset].hand[i].color == trump_color){
                     printf("Du musst die Farbe bedienen, wenn du kannst. Versuche es erneut.\n");
-                    return play_cards_ein_stich(start_spieler);
+                    goto nochmal;
                 }
             }
         }
 
 
         // Karte aus der Hand des Spielers entfernen
-        for (int i = card_index; i < 15; i++) {
-            players[x+offset%4].hand[i] = players[x+offset%4].hand[i + 1];
-        }
+
+        clean_hand(offset,card_index);
+
 
         printf("%s spielt %d of %s\n________________________________________________\n", players[x+offset%4].name, played_card.value, get_color_name(played_card.color));
 
         // Karte zum Stich hinzufügen
         played_Cards[x+offset%4] = played_card;
     }
-    return determine_single_round_winner(played_Cards);
+    return determine_single_round_winner(played_Cards)+start_spieler%num_players;
 }
 
 int max(int player1, int player2, int player3, int player4){
@@ -234,6 +246,7 @@ int main() {
     int start_spieler_runde = 0;
 
     for (int round = 1; round < ROUNDS; round++) {
+        current_round = round;
         deal_cards(round);
         play_round(round, start_spieler_runde);
         start_spieler_runde = (start_spieler_runde + 1) % num_players;
