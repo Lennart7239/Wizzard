@@ -6,6 +6,7 @@
 #define DECK_SIZE 60
 #define PLAYERS 4
 #define MAX_HAND_SIZE 15
+#define ROUNDS 60/PLAYERS
 
 
 typedef enum {
@@ -132,7 +133,7 @@ void clean_hand(int player, int card_index) {
 }
 
 
-int determine_single_round_winner(Card played_Cards[4]) {
+int determine_single_round_winner(Card played_Cards[PLAYERS]){
     Card trick = played_Cards[0];
     int winning_player = 0;
     for (int i = 0; i < PLAYERS; i++) {
@@ -148,6 +149,26 @@ int determine_single_round_winner(Card played_Cards[4]) {
     return winning_player;
 }
 
+
+int isValidInput() {
+    char input[50];
+    char *endptr;
+    long int number;
+
+    printf("Bitte geben Sie eine Zahl zwischen %d und %d ein: ", lower_bound, upper_bound);
+    scanf("%s", input);
+
+    errno = 0;  // errno auf 0 setzen, um einen möglichen vorherigen Fehler zu löschen
+    number = strtol(input, &endptr, 10);
+
+    // Überprüfen, ob die Umwandlung erfolgreich war
+    if (errno != 0 || *endptr != '\0' || number < lower_bound || number > upper_bound) {
+        printf("Fehler: Die Eingabe muss eine Zahl zwischen %d und %d sein.\n", lower_bound, upper_bound);
+        return -1;  // Rückgabe eines Fehlercodes
+    }
+
+    return (int)number;  // Rückgabe der gültigen Eingabe
+}
 
 int play_cards_ein_stich(int start_spieler) {
     Card played_Cards[PLAYERS];  // Karten, die in diesem Stich ausgespielt wurden
@@ -196,22 +217,21 @@ int play_cards_ein_stich(int start_spieler) {
         played_Cards[x] = played_card;
     }
 
-return determine_single_round_winner(played_Cards)+start_spieler;
+return (determine_single_round_winner(played_Cards)+start_spieler)%PLAYERS;
 }
 
-int max(int player1, int player2, int player3, int player4){
-    if(player1 > player2 && player1 > player3 && player1 > player4){
-        return 0;
-    } else if(player2 > player1 && player2 > player3 && player2 > player4){
-        return 1;
-    } else if(player3 > player1 && player3 > player2 && player3 > player4){
-        return 2;
-    } else {
-        return 3;
+int max(Player players[PLAYERS]){
+    int max = 0;
+    for (int i = 0; i < PLAYERS; i++) {
+        if (players[i].gewonnene_stiche > max) {
+            max = players[i].gewonnene_stiche;
+        }
     }
+    return max;
 }
 
 void play_round(int round, int start_spieler_runde){
+    printf("Neue Runde\n________________________________________________\n________________________________________________\n");
     // Jeder Spieler erhält eine Anzahl von Karten entsprechend der Rundenzahl
     deal_cards(round);
     int called_stiche = 0;
@@ -239,30 +259,35 @@ void play_round(int round, int start_spieler_runde){
     for (int i = 0; i < round; i++) {
             start_spieler_stich = play_cards_ein_stich(start_spieler_stich);
             players[start_spieler_stich].gewonnene_stiche +=1;
-        int winner = max(players[0].gewonnene_stiche, players[1].gewonnene_stiche, players[2].gewonnene_stiche, players[3].gewonnene_stiche);
+        int winner = start_spieler_stich;
         printf("%s hat den Stich gewonnen!\n________________________________________________\n", players[winner].name);
     }
     // Die Punktzahlen der Spieler werden basierend auf den Vorhersagen und den tatsächlichen Stichen aktualisiert
     for (int i = 0; i < PLAYERS; i++) {
         if (players[i].gewonnene_stiche == players[i].called_stiche) {
-            players[i].gewonnene_stiche = 20 + 10 * players[i].called_stiche;
+            players[i].score = 20 + 10 * players[i].called_stiche;
         } else {
-            players[i].gewonnene_stiche = players[i].score -(10 * abs(players[i].gewonnene_stiche - players[i].called_stiche));
+            players[i].score = players[i].score -(10 * abs(players[i].gewonnene_stiche - players[i].called_stiche));
         }
     }
 }
 
+int compare_scores(const void *a, const void *b) {
+    Player *playerA = (Player *)a;
+    Player *playerB = (Player *)b;
+    return playerB->score - playerA->score;
+}
 
-int get_highest_score_player() {
-    int max_score = 0;
-    int max_score_player = 0;
+void sort_players_by_score() {
+    qsort(players, PLAYERS, sizeof(Player), compare_scores);
+}
+
+void print_scoreboard() {
+    sort_players_by_score();
+    printf("Das Spiel ist vorbei! Das Endergebnis ist:\n");
     for (int i = 0; i < PLAYERS; i++) {
-        if (players[i].score > max_score) {
-            max_score = players[i].score;
-            max_score_player = i;
-        }
+        printf("%s: %d\n", players[i].name, players[i].score);
     }
-    return max_score_player;
 }
 
 int main() {
@@ -278,15 +303,14 @@ int main() {
     // Spielen Sie das Spiel.
     int start_spieler_runde = 0;
 
-    for (int round = 1; round < ROUNDS; round++) {
+    for (int round = 1; round <= ROUNDS; round++) {
         current_round = round;
         shuffle_deck();
         deal_cards(round);
         play_round(round, start_spieler_runde);
         start_spieler_runde = (start_spieler_runde + 1) % PLAYERS;
     }
-    int winner = get_highest_score_player();
-    printf("Das Spiel ist vorbei. %s hat mit %d Punkten gewonnen!\n", players[winner].name, players[winner].score);
+    print_scoreboard();
 
     return 0;
 }
