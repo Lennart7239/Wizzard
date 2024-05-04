@@ -37,12 +37,6 @@ void print_stich(Card stich[PLAYERS])
     printf("Aktuell liegende Karten:\n\n");
     printf("Trumpf:    ");
     print_card(trump);
-    /*
-    if (trick.value != 0)
-    {
-        printf("\tTrick :%s\n", get_color_name(trick.color));
-    }
-     */
     printf("\n");
     for (int i = 0; i < PLAYERS; i++)
     {
