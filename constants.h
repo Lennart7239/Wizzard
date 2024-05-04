@@ -11,7 +11,7 @@
 
 typedef enum
 {
-    HUMAN, AI      // 0 = Mensch, 1 = KI
+    HUMAN __attribute__((unused)), AI __attribute__((unused))       // 0 = Mensch, 1 = KI
 } Mensch_AI;
 
 typedef enum
@@ -39,6 +39,7 @@ typedef struct
 
 typedef struct
 {
+    int called_stiche[PLAYERS];
     int playernumber;
     Card liegendes_deck[PLAYERS];
     Card trick;

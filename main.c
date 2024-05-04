@@ -60,13 +60,14 @@ void print_hand(int player)
 
 Outputdata outputToBot(int player)
 {
-    Outputdata *output = (Outputdata *) malloc(sizeof(Outputdata));
+    Outputdata output;
     //Hand übergeben
     for (int i = 0; i < MAX_HAND_SIZE; i++)
     {
-        output->hand[i] = players[player].hand[i];
+        output.hand[i] = players[player].hand[i];
     }
     //TODO: OutputData vervollständigen
+    return output;
 }
 
 
@@ -106,7 +107,7 @@ int getInput(int modus, char name[50])
         int card_index;
         card_index = isValidInput();
         card_index -= 1;
-        if (card_index <= 0 || card_index > current_round)
+        if (card_index < 0 || card_index > current_round)
         {
             printf("\nWird nicht akzeptiert. Versuche es erneut.\n");
             goto nochmal;
@@ -186,24 +187,14 @@ void clean_hand(int player, int card_index)
 
 int determine_single_round_winner(Card played_Cards[PLAYERS])
 {
-    Card trick = played_Cards[0];
+    Card temp_trick = played_Cards[0];
     int winning_player = 0;
     for (int i = 0; i < PLAYERS; i++)
     {
         Card current_card = played_Cards[i];
-        if (current_card.color == trick.color && current_card.value > trick.value)
+        if ((current_card.color == temp_trick.color || current_card.color == trump.color) && current_card.value > temp_trick.value)
         {
-            trick = current_card;
-            winning_player = i;
-        }
-        else if (current_card.color == trump.color && trick.color != trump.color)
-        {
-            trick = current_card;
-            winning_player = i;
-        }
-        else if (current_card.color == trump.color && trick.color == trump.color && current_card.value > trick.value)
-        {
-            trick = current_card;
+            temp_trick = current_card;
             winning_player = i;
         }
     }
