@@ -90,8 +90,14 @@ int getInput(int modus, char name[50])
     if (modus == 1)
     {    //stiche callen
         int input;
+        nochmal:
         printf("%s wie viele Stiche denkst du, wirst du machen?\n", name);
         input = isValidInput();
+        if (input < 0 || input > current_round)
+        {
+            printf("Falsche Eingabe. Bitte gib eine Zahl zwischen 0 und %d ein.\n", current_round);
+            goto nochmal;
+        }
         return input;
     }
     else if (modus == 2)
@@ -100,8 +106,14 @@ int getInput(int modus, char name[50])
         int card_index;
         card_index = isValidInput();
         card_index -= 1;
+        if (card_index <= 0 || card_index > current_round)
+        {
+            printf("\nWird nicht akzeptiert. Versuche es erneut.\n");
+            goto nochmal;
+        }
         return card_index;
     }
+    return 0;
 }
 
 
@@ -208,7 +220,7 @@ int play_stich(int start_spieler)
         played_Cards[i].color = NILL;
     }
     //default werte für Trick
-    trick.value = 0;
+    trick.value = -1;
     trick.color = NILL;
     for (int x = 0; x < PLAYERS; x++)
     {   //Jeder Spieler spielt eine Karte
@@ -217,15 +229,9 @@ int play_stich(int start_spieler)
         print_stich(played_Cards);  //Liegende Karten ausgeben
         print_hand(offset);  // Zeige die Karten des Spielers an
         int card_index = getInput(2, players[offset].name); //input von nutzer bekommen
-        //falsche eingabe
-        if (card_index < 0 || card_index >= current_round)
-        {
-            printf("\nWird nicht akzeptiert. Versuche es erneut.\n");
-            goto nochmal;
-        }
-        Card played_card = players[offset].hand[card_index];    //Geschpielte Karte herausfinden
+        Card played_card = players[offset].hand[card_index];    //Gespielte Karte herausfinden
         //trick setzen, falls er noch nicht existiert
-        if (trick.value == 0 && played_card.value != 14 && played_card.value != 0)
+        if (trick.value == -1 && played_card.value != 14 && played_card.value != 0)
         {
             trick.color = played_card.color;
             trick.value = played_card.value;
