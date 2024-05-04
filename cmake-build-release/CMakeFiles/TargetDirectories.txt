@@ -1,3 +1,0 @@
-C:/Users/lenna/OneDrive - Students RWTH Aachen University/coden/C/Wizzard/cmake-build-release/CMakeFiles/C.dir
-C:/Users/lenna/OneDrive - Students RWTH Aachen University/coden/C/Wizzard/cmake-build-release/CMakeFiles/edit_cache.dir
-C:/Users/lenna/OneDrive - Students RWTH Aachen University/coden/C/Wizzard/cmake-build-release/CMakeFiles/rebuild_cache.dir
