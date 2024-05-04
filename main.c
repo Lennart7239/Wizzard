@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
 #include "constants.h"
 
 
@@ -73,20 +70,35 @@ Outputdata outputToBot(int player)
 }
 
 
+int isValidInput() {
+    int input;
+    nochmal:
+    if(scanf("%d", &input) == 1)
+    {
+        return input;
+    }
+    else {
+        while(getchar() != '\n');
+        printf("Falsche eingabe\n");
+        goto nochmal;
+    }
+}
+
+
 int getInput(int modus, char name[50])
 {
     if (modus == 1)
     {    //stiche callen
         int input;
         printf("%s wie viele Stiche denkst du, wirst du machen?\n", name);
-        scanf("%d", &input);
+        input = isValidInput();
         return input;
     }
     else if (modus == 2)
     {    //Karte legen
         printf("\n%s, welche Karte willst du ausspielen?\n", name);
         int card_index;
-        scanf("%d", &card_index);
+        card_index = isValidInput();
         card_index -= 1;
         return card_index;
     }
@@ -324,27 +336,21 @@ void print_scoreboard()
 int main()
 {
     setbuf(stdout, NULL);
-    // Initialisieren und mischen Sie das Deck.
+    // Deck erstellen und mischen
     initialize_deck();
     shuffle_deck();
-
-    // Initialisieren Sie die Spieler.
+    //erstellen der Spieler
     initialize_players();
-
-    // Teilen Sie die Karten aus.
-
-    // Spielen Sie das Spiel.
+    // Spiel starten
     int start_spieler_runde = 0;
-
     for (int round = 1; round <= ROUNDS; round++)
     {
-        current_round = round;
+        current_round = round; //current_round setzen
         shuffle_deck();
         deal_cards(round);
         play_round(round, start_spieler_runde);
-        start_spieler_runde = (start_spieler_runde + 1) % PLAYERS;
+        start_spieler_runde = (start_spieler_runde + 1) % PLAYERS;  //Nächsten Spieler als Startspieler setzen
     }
     print_scoreboard();
-
     return 0;
 }
