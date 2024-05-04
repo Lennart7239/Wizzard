@@ -266,8 +266,9 @@ void play_round(int round, int start_spieler_runde)
     // Jeder Spieler macht eine Vorhersage über die Anzahl der Stiche, die er machen wird
     for (int i = 0; i < PLAYERS; i++)
     {
+        int offset;
         nochmal:
-        int offset = (i + start_spieler_runde) % PLAYERS;
+        offset = (i + start_spieler_runde) % PLAYERS;
         printf("Trumpf:    ");
         print_card(trump);
         print_hand(offset);  // Zeige die Karten des Spielers an
